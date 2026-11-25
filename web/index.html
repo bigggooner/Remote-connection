@@ -44,7 +44,9 @@
     <section class="panel controls">
       <h2>Control settings</h2>
       <label class="switchrow"><input type="checkbox" id="inputEnabled" checked> Allow mouse and keyboard control</label>
-      <p>Remote input is sent only after the host has approved the session. Browser and operating-system reserved shortcuts may not be forwarded.</p>
+      <label for="mobileKeys">On-screen keyboard (phones/tablets)</label>
+      <input id="mobileKeys" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Tap here to type on the host computer">
+      <p>Click the video to focus a physical keyboard. On phones/tablets, tap the text box to open the on-screen keyboard. Touch gestures control the mouse. Browser and operating-system reserved shortcuts may not be forwarded.</p>
       <div class="keys" id="keyStatus">Input: waiting</div>
     </section>
   </main>
