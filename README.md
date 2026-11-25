@@ -1,33 +1,38 @@
 # Easy Remote Desktop
 
-Browser controller for an authorized remote desktop session. The controller website is deployed with GitHub Pages; the host agent and signaling/TURN services run on the host PC and a separate Linux VPS.
+A browser-based remote desktop prototype for a computer you own or are authorized to control.
 
-## Website deployment
+## Published controller
 
-1. Open **Settings → Pages** in this repository.
-2. Under **Build and deployment**, select **GitHub Actions**.
-3. The workflow at `.github/workflows/pages.yml` publishes the `web/` folder whenever you push to `main`.
-4. After the workflow succeeds, your website is:
-   `https://bigggooner.github.io/Remote-connection/`
+https://bigggooner.github.io/Remote-connection/
 
-## Important: GitHub Pages is not the relay
+The controller website is hosted by GitHub Pages. The relay server is a separate Linux VPS service; GitHub Pages cannot run WebSocket signaling or TURN.
 
-GitHub Pages only serves the static browser files. It cannot run the always-on WebSocket signaling server or TURN daemon. For home Wi-Fi ↔ mobile hotspot connections, deploy the signaling service and Coturn on a Linux VPS with a public IP and a domain name.
+## Remote keyboard and mouse
 
-The relay deployment files and Windows host agent are in the companion **Easy Remote Desktop — GitHub + Relay ZIP** attached in this chat. Extract that ZIP on the host PC and use the included `deploy/relay/` and `host/` folders.
+The controller supports mouse movement, left/middle/right click, scrolling, and keyboard key-down/key-up events over an encrypted WebRTC data channel. On phones and tablets, the controller also includes a text box that opens the on-screen keyboard. Touch gestures control the pointer. Click the video to focus a physical keyboard on desktop.
 
-Follow `deploy/relay/README.md` in that ZIP to set up the VPS. The VPS must allow TCP 80/443, TCP+UDP 3478, and the configured UDP media relay range. After the relay is running, configure `web/config.js` with:
-- `signalingUrl`: `wss://your-relay-domain`
-- `turnCredentialsUrl`: `https://your-relay-domain/api/turn-credentials`
+The Windows host uses pynput to apply remote input. The host must approve each session locally. Ctrl+Alt+Esc disables remote input immediately; closing the host window ends the session. Browser and operating-system reserved shortcuts may not be forwarded.
 
-Commit and push the updated `web/config.js`; GitHub Pages will publish it automatically. Keep the TURN shared secret only on the VPS in its `.env` file.
+## Relay deployment
 
-## Host and controller
+The repository now includes:
+- `server.js` and `package.json`: WebSocket signaling and short-lived TURN credential API.
+- `deploy/relay/`: Docker Compose deployment with Caddy HTTPS and Coturn.
+- `web/`: GitHub Pages controller.
 
-- Host PC: extract the companion ZIP, configure relay settings, then run `Start Host.bat`. Approve access locally when prompted.
-- Controller PC: open the GitHub Pages URL, enter the one-time code shown by the host, and select **Connect securely**.
-- The host can stop the session by closing the host window or using Ctrl+Alt+Esc.
+For deployment, follow [deploy/relay/README.md](deploy/relay/README.md). You need a Linux VPS with a public IPv4 address, a domain/subdomain pointing to it, and firewall access to TCP 80/443, TCP+UDP 3478, and UDP 49160–49200. A public server is required for dependable home-Wi-Fi to mobile-hotspot connections.
 
-## Security
+After the relay is running, configure `web/config.js` with:
+- `signalingUrl: 'wss://YOUR-RELAY-HOSTNAME'`
+- `turnCredentialsUrl: 'https://YOUR-RELAY-HOSTNAME/api/turn-credentials'`
 
-This is a prototype, not a security-audited remote access product. Keep one-time session codes private, use HTTPS/WSS, keep TURN secrets off the website and repository, and only connect to computers you own or are authorized to access.
+Keep the TURN shared secret only in the VPS `.env` file. Never put it in GitHub or browser/host configuration.
+
+## Windows host
+
+The Windows host files are supplied in the Easy Remote Desktop project ZIP. Extract it on the host PC, run `Start Host.bat`, and approve locally when prompted. Configure the relay URLs in `host/settings.json` after the VPS is deployed.
+
+## Security notice
+
+This is a prototype, not a security-audited commercial remote access product. Keep session codes private, only approve sessions you initiated, use HTTPS/WSS, and stop the host when finished. TURN forwards encrypted WebRTC traffic and consumes VPS bandwidth.
