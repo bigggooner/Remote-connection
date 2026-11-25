@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <title>Easy Remote Desktop</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="logo">◈</div>
+    <div><h1>Easy Remote Desktop</h1><p>Private remote support session</p></div>
+    <span class="status" id="status">Not connected</span>
+  </header>
+  <main>
+    <section class="panel setup">
+      <h2>Connect to your host</h2>
+      <p class="intro">On the computer you want to access, run <b>Start Host.bat</b>. Enter the one-time code it displays.</p>
+      <label class="code-label" for="room">One-time connection code</label>
+      <input id="room" maxlength="32" placeholder="Paste host code here" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <div class="actions">
+        <button id="connect">Connect securely</button>
+        <button id="disconnect" class="secondary" disabled>Disconnect</button>
+      </div>
+      <div class="steps">
+        <div class="step"><span>1</span><div><b>Start the host</b><small>Run Start Host.bat and approve access locally.</small></div></div>
+        <div class="step"><span>2</span><div><b>Enter the code</b><small>Use the code shown in the host window.</small></div></div>
+        <div class="step"><span>3</span><div><b>Connect</b><small>Click the screen to send mouse and keyboard input.</small></div></div>
+      </div>
+      <details class="advanced">
+        <summary>Advanced connection settings</summary>
+        <label for="server">Signaling server address</label>
+        <input id="server" spellcheck="false" autocomplete="off">
+        <p class="hint">Use a secure wss:// address for internet connections.</p>
+      </details>
+      <p class="privacy-note">The host must approve each session. The host can stop access at any time with Ctrl+Alt+Esc or by closing the host window.</p>
+    </section>
+    <section class="panel desktop">
+      <div class="toolbar"><strong>Host screen</strong><span id="peerState">Waiting for connection</span><button id="fullscreen" class="secondary" disabled>Fullscreen</button></div>
+      <div class="screen-wrap" id="screenWrap"><video id="screen" autoplay playsinline tabindex="0"></video><div id="placeholder">Your host's screen will appear here.</div></div>
+      <div class="toolbar bottom"><span id="videoInfo">Waiting for video</span><span>Click the video to focus keyboard control</span></div>
+    </section>
+    <section class="panel controls">
+      <h2>Control settings</h2>
+      <label class="switchrow"><input type="checkbox" id="inputEnabled" checked> Allow mouse and keyboard control</label>
+      <p>Remote input is sent only after the host has approved the session. Browser and operating-system reserved shortcuts may not be forwarded.</p>
+      <div class="keys" id="keyStatus">Input: waiting</div>
+    </section>
+  </main>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
