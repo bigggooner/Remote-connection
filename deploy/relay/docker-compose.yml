@@ -1,0 +1,54 @@
+services:
+  signal:
+    build:
+      context: ../..
+      dockerfile: deploy/relay/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS}"
+      TURN_SECRET: "${TURN_SECRET}"
+      TURN_URLS: "${TURN_URLS}"
+      TURN_TTL_SECONDS: "86400"
+    networks: [relay]
+    healthcheck:
+      test: ["CMD","node","-e","fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [signal]
+    environment:
+      RELAY_DOMAIN: "${RELAY_DOMAIN}"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [relay]
+  turn:
+    image: coturn/coturn:4.19.2-r0
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - "-n"
+      - "--log-file=stdout"
+      - "--listening-port=3478"
+      - "--use-auth-secret"
+      - "--static-auth-secret=${TURN_SECRET}"
+      - "--realm=${TURN_REALM}"
+      - "--fingerprint"
+      - "--no-multicast-peers"
+      - "--min-port=49160"
+      - "--max-port=49200"
+networks:
+  relay:
+    driver: bridge
+volumes:
+  caddy_data:
+  caddy_config:
