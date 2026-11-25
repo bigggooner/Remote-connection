@@ -14,8 +14,7 @@ Browser controller for an authorized remote desktop session. The controller webs
 
 GitHub Pages only serves the static browser files. It cannot run the always-on WebSocket signaling server or TURN daemon. For home Wi-Fi ↔ mobile hotspot connections, deploy the signaling service and Coturn on a Linux VPS with a public IP and a domain name.
 
-The relay deployment files and Windows host agent are in the companion project ZIP:
-[Download the GitHub + Relay project ZIP](https://github.com/bigggooner/Remote-connection/releases)
+The relay deployment files and Windows host agent are in the companion **Easy Remote Desktop — GitHub + Relay ZIP** attached in this chat. Extract that ZIP on the host PC and use the included `deploy/relay/` and `host/` folders.
 
 Follow `deploy/relay/README.md` in that ZIP to set up the VPS. The VPS must allow TCP 80/443, TCP+UDP 3478, and the configured UDP media relay range. After the relay is running, configure `web/config.js` with:
 - `signalingUrl`: `wss://your-relay-domain`
