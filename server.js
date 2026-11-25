@@ -1,8 +1,12 @@
 // WebSocket signaling + short-lived TURN credential API.
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const WebSocket = require('ws');
 const PORT = Number(process.env.PORT || 8080);
+const WEB = path.join(__dirname, 'web');
+const MIME = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'application/javascript; charset=utf-8','.json':'application/json; charset=utf-8'};
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);
 const TURN_SECRET = process.env.TURN_SECRET || '';
 const TURN_URLS = (process.env.TURN_URLS || '').split(',').map(x => x.trim()).filter(Boolean);
@@ -15,7 +19,29 @@ function turnCredentials() { const username = String(Math.floor(Date.now()/1000)
 const server = http.createServer((req,res) => {
   const url = new URL(req.url || '/', 'http://localhost');
   if (url.pathname === '/health') return json(res,200,{ok:true,turnConfigured:!!TURN_SECRET&&TURN_URLS.length>0,rooms:rooms.size});
-  if (url.pathname !== '/api/turn-credentials') return json(res,404,{error:'Not found'});
+  if (url.pathname === '/api/turn-credentials') {
+    const origin=req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) { res.setHeader('Access-Control-Allow-Origin',origin); res.setHeader('Vary','Origin'); }
+    res.setHeader('Access-Control-Allow-Methods','GET, OPTIONS');
+    if (req.method==='OPTIONS') { res.writeHead(204); return res.end(); }
+    if (req.method!=='GET') return json(res,405,{error:'Method not allowed'});
+    if (!originAllowed(origin)) return json(res,403,{error:'Origin not allowed'});
+    const ip=req.socket.remoteAddress||'unknown';
+    if (rateLimited(turnAttempts,ip,60,60000)) return json(res,429,{error:'Too many requests'});
+    if (!TURN_SECRET||!TURN_URLS.length) return json(res,503,{error:'TURN is not configured'});
+    return json(res,200,{iceServers:[{urls:TURN_URLS,...turnCredentials()},{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}],expiresIn:TURN_TTL_SECONDS});
+  }
+  let pathname;
+  try { pathname=decodeURIComponent(url.pathname); } catch { return json(res,400,{error:'Bad path'}); }
+  if (pathname === '/') pathname='/index.html';
+  const full=path.resolve(WEB,'.'+pathname);
+  if (!full.startsWith(WEB+path.sep) && full!==WEB) return json(res,403,{error:'Forbidden'});
+  fs.readFile(full,(err,data)=>{
+    if(err) return json(res,404,{error:'Not found'});
+    res.writeHead(200,{'content-type':MIME[path.extname(full)]||'application/octet-stream','cache-control':'no-cache'});
+    res.end(data);
+  });
+  return;
   const origin=req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) { res.setHeader('Access-Control-Allow-Origin',origin); res.setHeader('Vary','Origin'); }
   res.setHeader('Access-Control-Allow-Methods','GET, OPTIONS');
