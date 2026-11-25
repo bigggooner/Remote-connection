@@ -84,16 +84,26 @@
     if (!focused) return; const now = performance.now(); if (now - lastMove < 8) return; lastMove = now;
     sendInput({ type: 'move', ...point(event) });
   });
-  video.addEventListener('pointerdown', event => { focused = true; video.focus(); sendInput({ type: 'button', button: event.button, down: true, ...point(event) }); event.preventDefault(); });
+  video.addEventListener('pointerdown', event => { focused = true; video.focus(); try { video.setPointerCapture(event.pointerId); } catch {} sendInput({ type: 'button', button: event.button, down: true, ...point(event) }); event.preventDefault(); });
   video.addEventListener('pointerup', event => { sendInput({ type: 'button', button: event.button, down: false, ...point(event) }); event.preventDefault(); });
   video.addEventListener('contextmenu', event => event.preventDefault());
   video.addEventListener('wheel', event => { if (focused) { sendInput({ type: 'wheel', dx: event.deltaX, dy: event.deltaY }); event.preventDefault(); } }, { passive: false });
   window.addEventListener('keydown', event => {
-    if (!focused || document.activeElement === roomEl || document.activeElement === serverEl) return;
+    if (!focused || document.activeElement === roomEl || document.activeElement === serverEl || document.activeElement === $('mobileKeys')) return;
     sendInput({ type: 'key', key: event.key, code: event.code, down: true, repeat: event.repeat });
     if (['Tab', 'Alt', 'Meta', 'Control'].includes(event.key) || event.ctrlKey || event.altKey) event.preventDefault();
   });
   window.addEventListener('keyup', event => { if (focused) sendInput({ type: 'key', key: event.key, code: event.code, down: false }); });
+  const mobileKeys = $('mobileKeys');
+  if (mobileKeys) {
+    const tapKey = key => { sendInput({ type: 'key', key, code: '', down: true }); sendInput({ type: 'key', key, code: '', down: false }); };
+    mobileKeys.addEventListener('beforeinput', event => {
+      if (event.inputType === 'insertText' && event.data) { for (const char of event.data) tapKey(char); event.preventDefault(); }
+      else if (event.inputType === 'deleteContentBackward') { tapKey('Backspace'); event.preventDefault(); }
+      else if (event.inputType === 'insertLineBreak') { tapKey('Enter'); event.preventDefault(); }
+      mobileKeys.value = '';
+    });
+  }
   window.addEventListener('blur', () => { focused = false; sendInput({ type: 'release-all' }); });
   async function connect() {
     if (connecting) return;
