@@ -41,17 +41,6 @@ const server = http.createServer((req,res) => {
     res.writeHead(200,{'content-type':MIME[path.extname(full)]||'application/octet-stream','cache-control':'no-cache'});
     res.end(data);
   });
-  return;
-  const origin=req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) { res.setHeader('Access-Control-Allow-Origin',origin); res.setHeader('Vary','Origin'); }
-  res.setHeader('Access-Control-Allow-Methods','GET, OPTIONS');
-  if (req.method==='OPTIONS') { res.writeHead(204); return res.end(); }
-  if (req.method!=='GET') return json(res,405,{error:'Method not allowed'});
-  if (!originAllowed(origin)) return json(res,403,{error:'Origin not allowed'});
-  const ip=req.socket.remoteAddress||'unknown';
-  if (rateLimited(turnAttempts,ip,60,60000)) return json(res,429,{error:'Too many requests'});
-  if (!TURN_SECRET||!TURN_URLS.length) return json(res,503,{error:'TURN is not configured'});
-  return json(res,200,{iceServers:[{urls:TURN_URLS,...turnCredentials()},{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}],expiresIn:TURN_TTL_SECONDS});
 });
 const wss=new WebSocket.Server({server,maxPayload:65536});
 function send(ws,payload) { if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(payload)); }
